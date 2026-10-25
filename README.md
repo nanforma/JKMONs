@@ -46,7 +46,7 @@ python3 jkmon_gtk.py
 ## Interface language
 
 English by default. Pick the language from the dropdown on the Connection tab, to the right of the heading
-(English / Українська / Русский). It changes instantly, without a restart, and is remembered. To change it while
+(English / Ukrainian / Russian). It changes instantly, without a restart, and is remembered. To change it while
 the monitor is running, press "Disconnect" and open the Connection tab. A new language is added to `i18n.py`
 as one more column in the `_ROWS` table.
 
