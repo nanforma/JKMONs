@@ -5,6 +5,9 @@ resistances, temperatures, balancing, MOSFET state, error flags, and a load bar 
 charge or empty. No browser needed.
 Read-only: the app only sends data requests to the BMS and never switches anything.
 
+> **Note:** this program has been tested only on one board: JK_B2A8S20P (hardware 11A, software 11.54), a 4S 280 Ah LiFePO4 pack.
+> Other JK models or firmware versions may use a different data layout and show wrong values.
+
 <p>
   <img src="screenshot/connection.png" width="400">
   <img src="screenshot/monitor.png" width="400">
