@@ -8,7 +8,6 @@ Read-only: the app only sends data requests to the BMS and never switches anythi
 <p>
   <img src="screenshot/connection.png" width="400">
   <img src="screenshot/monitor.png" width="400">
-   <img src="screenshot/log.png" width="400">
 </p>
 
 ## Install: option 1 — deb package (recommended for Mint / Ubuntu / Debian)
