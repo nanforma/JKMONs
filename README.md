@@ -10,6 +10,24 @@ Read-only: the app only sends data requests to the BMS and never switches anythi
   <img src="screenshot/monitor.png" width="400">
 </p>
 
+## Credits and sources
+
+- **Protocol (JK02_32S):** the 20-byte request frames, the 300-byte response frames and the field offsets come from
+  the open-source project [syssi/esphome-jk-bms](https://github.com/syssi/esphome-jk-bms). Only the facts about the
+  format were used; the code in this repository is written from scratch.
+- **Tested hardware:** JK_B2A8S20P, hardware 11A, software 11.54, a 4S 280 Ah LiFePO4 pack. Other JK models may use
+  a different frame layout.
+- **Error flags:** the names of bits 4 ("Cell OVP") and 19 (settings password recommendation) were confirmed by
+  comparing with the JK Android app on the author's own battery. No other bit names are guessed.
+- **Libraries:** [bleak](https://github.com/hbldh/bleak) (Bluetooth LE client) and
+  [dbus-fast](https://github.com/Bluetooth-Devices/dbus-fast) (D-Bus, optional PIN agent), both MIT licensed;
+  [PyGObject](https://pygobject.gnome.org/) with GTK 3 (LGPL) for the window; [BlueZ](http://www.bluez.org/) is the
+  Bluetooth stack of the system.
+- **Icon:** `jkmon.svg` / `jkmon.png` were supplied by the project author. It is not part of any license that may
+  cover the code.
+- **Trademarks:** "JK", "Jikong" and "JK BMS" belong to their owners. This is an independent project, not affiliated
+  with or endorsed by Jikong.
+
 ## Install: option 1 — deb package (recommended for Mint / Ubuntu / Debian)
 
 ```bash
@@ -102,20 +120,4 @@ The scale is set when the connection is made.
 `jkmon.svg` (and `jkmon.png`) are the only icon sources. The sizes for the menu and the panel are rendered at build
 time by `make_icons.py`, and the window icon is rendered from the SVG when the program starts.
 
-## Credits and sources
 
-- **Protocol (JK02_32S):** the 20-byte request frames, the 300-byte response frames and the field offsets come from
-  the open-source project [syssi/esphome-jk-bms](https://github.com/syssi/esphome-jk-bms). Only the facts about the
-  format were used; the code in this repository is written from scratch.
-- **Tested hardware:** JK_B2A8S20P, hardware 11A, software 11.54, a 4S 280 Ah LiFePO4 pack. Other JK models may use
-  a different frame layout.
-- **Error flags:** the names of bits 4 ("Cell OVP") and 19 (settings password recommendation) were confirmed by
-  comparing with the JK Android app on the author's own battery. No other bit names are guessed.
-- **Libraries:** [bleak](https://github.com/hbldh/bleak) (Bluetooth LE client) and
-  [dbus-fast](https://github.com/Bluetooth-Devices/dbus-fast) (D-Bus, optional PIN agent), both MIT licensed;
-  [PyGObject](https://pygobject.gnome.org/) with GTK 3 (LGPL) for the window; [BlueZ](http://www.bluez.org/) is the
-  Bluetooth stack of the system.
-- **Icon:** `jkmon.svg` / `jkmon.png` were supplied by the project author. It is not part of any license that may
-  cover the code.
-- **Trademarks:** "JK", "Jikong" and "JK BMS" belong to their owners. This is an independent project, not affiliated
-  with or endorsed by Jikong.
