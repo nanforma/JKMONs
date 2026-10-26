@@ -97,6 +97,8 @@ The scale is set when the connection is made.
 
 ## Icon
 
+![icon](jkmon.png)
+
 `jkmon.svg` (and `jkmon.png`) are the only icon sources. The sizes for the menu and the panel are rendered at build
 time by `make_icons.py`, and the window icon is rendered from the SVG when the program starts.
 
