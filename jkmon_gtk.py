@@ -59,6 +59,7 @@ import jkcore  # noqa: E402
 from i18n import tr  # noqa: E402
 
 CONFIG = Path.home() / ".config" / "jkmon" / "config.json"
+log = logging.getLogger("jkmon.gui")
 LOGFILE = Path.home() / ".cache" / "jkmon" / "jkmon.log"
 
 CSS = b"""
@@ -271,6 +272,10 @@ class App(Gtk.Window):
         self.devices = {}
         self.bar_scale = None  # watts that fill the load bar (100%): 1C power, set from the first reading
         self.bar_value = 0.0
+        self.err_msgs = []      # status messages shown one at a time in the plaque
+        self.err_idx = 0
+        self.err_warn = False
+        self.err_logged = frozenset()
         self.last_data = None
         self.cell_widgets = []
         self.chips_key = None
@@ -300,6 +305,7 @@ class App(Gtk.Window):
         self.connect("delete-event", self.save_window_state)
         self.connect("destroy", self.on_destroy)
         GLib.timeout_add(500, self.tick)
+        GLib.timeout_add_seconds(3, self.rotate_err)
 
     # ------------------------------------------------------------ header / language
     def build_header(self):
@@ -821,6 +827,23 @@ class App(Gtk.Window):
             self.update_monitor(d)
         return True
 
+    def show_err(self):
+        """Show the current message of the status plaque (one line) and colour the plaque."""
+        msgs = self.err_msgs
+        if msgs:
+            self.err_lbl.set_markup(msgs[self.err_idx % len(msgs)])
+        else:
+            self.err_lbl.set_text(tr("No errors"))
+        set_class(self.err_box, "warn", bool(msgs) and self.err_warn)
+        set_class(self.err_box, "info", bool(msgs) and not self.err_warn)
+        set_class(self.err_box, "ok", not msgs)
+
+    def rotate_err(self):
+        if len(self.err_msgs) > 1:
+            self.err_idx = (self.err_idx + 1) % len(self.err_msgs)
+            self.show_err()
+        return True
+
     def update_monitor(self, d, record=True):
         self.mon_stack.set_visible_child_name("data")
         unit = lambda u: f'<span alpha="60%"> {u}</span>'  # noqa: E731
@@ -842,26 +865,24 @@ class App(Gtk.Window):
         self.pow_big.set_markup(f'{d["power"]:.0f}{unit(tr("W"))}')
         self.powsub_lbl.set_text(tr("{v:.1f} / {n:.1f} Ah").format(v=d["cap_remaining"], n=d["cap_nominal"]))
 
+        # Status plaque: the known flags are shown one at a time (rotating every 3 s) so that they take one line.
+        # Flags with an unknown meaning are not shown, they are written to the log instead.
         bits = d["error_bits"]
-        alarms = [b for b in bits if b not in jkcore.INFO_BITS]
-        if bits:
-            lines = []
-            if alarms:
-                lines.append(f'<b>{GLib.markup_escape_text(tr("BMS flags"))}</b> '
-                             + GLib.markup_escape_text(d["errors_raw"]))
-            for bit in bits:
-                known = jkcore.ERROR_NAMES.get(bit)
-                name = tr(known) if known else tr("bit {n}").format(n=bit)
-                lines.append(("ℹ " if bit in jkcore.INFO_BITS else "• ") + GLib.markup_escape_text(name))
-            if any(bit not in jkcore.ERROR_NAMES for bit in bits):
-                lines.append('<span alpha="70%">' + GLib.markup_escape_text(
-                    tr("Bit meanings are not verified: compare with the warning shown in the JK app.")) + "</span>")
-            self.err_lbl.set_markup("\n".join(lines))
-        else:
-            self.err_lbl.set_text(tr("No errors"))
-        set_class(self.err_box, "warn", bool(alarms))
-        set_class(self.err_box, "info", bool(bits) and not alarms)
-        set_class(self.err_box, "ok", not bits)
+        bitset = frozenset(bits)
+        if bitset != self.err_logged:
+            if bits:
+                names = ", ".join(f"bit {b}: {jkcore.ERROR_NAMES.get(b, 'unknown meaning')}" for b in bits)
+                log.info("BMS flags %s (%s)", d["errors_raw"], names)
+            else:
+                log.info("BMS flags cleared")
+            self.err_logged = bitset
+        msgs = []
+        for bit in bits:
+            known = jkcore.ERROR_NAMES.get(bit)
+            if known:
+                prefix = "ℹ " if bit in jkcore.INFO_BITS else "• "
+                msgs.append(prefix + GLib.markup_escape_text(tr(known)))
+        self.err_warn = any(b in jkcore.ERROR_NAMES and b not in jkcore.INFO_BITS for b in bits)
 
         # cells
         cells, st = d["cells"], d["cell_stats"]
@@ -923,9 +944,12 @@ class App(Gtk.Window):
                                (tr("Run time"), dur(d["runtime_s"]))])
 
         if not d["sane"]:
-            self.err_lbl.set_markup(self.err_lbl.get_label() + "\n<i>" + GLib.markup_escape_text(tr(
+            msgs.append("<i>" + GLib.markup_escape_text(tr(
                 "Pack voltage does not match the sum of the cells: your firmware may use different field offsets. "
                 "Send a screenshot of the JK app.")) + "</i>")
+            self.err_warn = True
+        self.err_msgs = msgs
+        self.show_err()
 
         # load bar: current, power, status and the estimated time to full / empty
         green, amber = "#3ecf8e", "#f5a524"

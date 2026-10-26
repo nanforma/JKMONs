@@ -43,8 +43,8 @@ ERROR_NAMES: dict = {
     4: "Cell overvoltage protection (OVP)",  # confirmed in the JK app ("Cell OVP"): charging may be stopped
     19: "Recommendation: change the BMS settings password",  # confirmed in the JK app
 }
-# Bits that are notices, not faults (shown in blue, not as a warning).
-INFO_BITS = {19}
+# Bits that are notices, not faults (shown in blue, not as a warning): bit 4 is the normal end of charging.
+INFO_BITS = {4, 19}
 
 
 def checksum(data) -> int:

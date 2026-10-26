@@ -5,14 +5,6 @@ resistances, temperatures, balancing, MOSFET state, error flags, and a load bar 
 charge or empty. No browser needed.
 Read-only: the app only sends data requests to the BMS and never switches anything.
 
-> **Note:** this program has been tested only on one board: JK_B2A8S20P (hardware 11A, software 11.54), a 4S 280 Ah LiFePO4 pack.
-> Other JK models or firmware versions may use a different data layout and show wrong values.
-
-<p>
-  <img src="screenshot/connection.png" width="400">
-  <img src="screenshot/monitor.png" width="400">
-</p>
-
 ## Install: option 1 — deb package (recommended for Mint / Ubuntu / Debian)
 
 ```bash
@@ -46,7 +38,7 @@ python3 jkmon_gtk.py
 ## Interface language
 
 English by default. Pick the language from the dropdown on the Connection tab, to the right of the heading
-(English / Ukrainian / Russian). It changes instantly, without a restart, and is remembered. To change it while
+(English / Українська / Русский). It changes instantly, without a restart, and is remembered. To change it while
 the monitor is running, press "Disconnect" and open the Connection tab. A new language is added to `i18n.py`
 as one more column in the `_ROWS` table.
 
@@ -80,11 +72,13 @@ the window's title bar.
 
 ## About error flags
 
-The window lists the bits that are set. Confirmed with the JK app: bit 19 is a recommendation to change the BMS
-settings password (a blue notice, not an alarm), and bit 4 is "Cell OVP", cell overvoltage protection (an amber
-warning: the BMS may have stopped charging because a cell reached the OVP threshold). Other bits are shown as
-"bit N"; their meanings are not verified and the program does not guess. To add a name, put it into `ERROR_NAMES`
-in `jkcore.py`, for example `{19: "text from the JK app"}`.
+The status plaque above the cards shows the known flags one at a time, switching every 3 seconds, so it always takes
+one line. Confirmed with the JK app: bit 4 is "Cell OVP" (a cell reached the overvoltage threshold, which normally
+means the end of charging) and bit 19 is a recommendation to change the BMS settings password. Both are shown as
+blue notices, not alarms. Flags with an unknown meaning are not shown in the window: they are written to the **Log**
+tab and to `~/.cache/jkmon/jkmon.log` as "BMS flags 0x... (bit N: unknown meaning)". To add a name, put it into
+`ERROR_NAMES` in `jkcore.py`, for example `{19: "text from the JK app"}`; add the bit to `INFO_BITS` if it is only
+a notice.
 
 ## Load bar
 
