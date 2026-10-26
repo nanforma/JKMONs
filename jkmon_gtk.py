@@ -58,6 +58,8 @@ import i18n  # noqa: E402
 import jkcore  # noqa: E402
 from i18n import tr  # noqa: E402
 
+VERSION = "1.1.0"
+WEBSITE = "https://github.com/nanforma/JKMONs"
 CONFIG = Path.home() / ".config" / "jkmon" / "config.json"
 log = logging.getLogger("jkmon.gui")
 LOGFILE = Path.home() / ".cache" / "jkmon" / "jkmon.log"
@@ -322,6 +324,19 @@ class App(Gtk.Window):
         self.set_titlebar(hb)
         self.set_status(*self.status)
 
+    def on_about(self, *_):
+        dlg = Gtk.AboutDialog(transient_for=self, modal=True)
+        dlg.set_program_name("JKMONs")
+        dlg.set_version(VERSION)
+        dlg.set_comments(tr("Bluetooth monitor for JK BMS (read-only)") + "\n" + tr("Tested with JK_B2A8S20P"))
+        dlg.set_license_type(Gtk.License.GPL_3_0_ONLY)
+        dlg.set_website(WEBSITE)
+        dlg.set_website_label(tr("Project page on GitHub"))
+        if ICONS:
+            dlg.set_logo(min(ICONS, key=lambda p: abs(p.get_width() - 128)))  # about 128 px
+        dlg.run()
+        dlg.destroy()
+
     def on_lang_changed(self, combo):
         code = combo.get_active_id()
         if not code or code == i18n.get_lang():
@@ -336,7 +351,6 @@ class App(Gtk.Window):
         """Rebuild the window body in the new language, keeping what the user typed and the current tab."""
         tab = self.stack.get_visible_child_name()
         addr, pin = self.addr_entry.get_text(), self.pin_entry.get_text()
-        show_all = self.show_all_chk.get_active()
         model, it = self.tree.get_selection().get_selected()
         selected = model[it][1] if it else None
 
@@ -348,7 +362,6 @@ class App(Gtk.Window):
 
         self.addr_entry.set_text(addr)
         self.pin_entry.set_text(pin)
-        self.show_all_chk.set_active(show_all)
         self.render_devices(select=selected)
         if self.scanning:
             self.spinner.start()
@@ -437,6 +450,13 @@ class App(Gtk.Window):
         self.lang_combo.set_valign(Gtk.Align.CENTER)
         self.lang_combo.connect("changed", self.on_lang_changed)
         head.pack_end(self.lang_combo, False, False, 0)
+        about_btn = Gtk.Button()
+        about_btn.set_image(Gtk.Image.new_from_icon_name("dialog-information-symbolic", Gtk.IconSize.BUTTON))
+        about_btn.set_size_request(34, 34)  # square, as high as the language box
+        about_btn.set_valign(Gtk.Align.CENTER)
+        about_btn.set_tooltip_text(tr("About"))
+        about_btn.connect("clicked", self.on_about)
+        head.pack_end(about_btn, False, False, 0)
         page.pack_start(head, False, False, 0)
         page.pack_start(label(tr("Before connecting, close the JK app on your phone and turn off Bluetooth on it: "
                                  "the BMS accepts only one connection."), css="sub", wrap=True), False, False, 0)
@@ -477,12 +497,6 @@ class App(Gtk.Window):
         page.pack_start(label(tr("★ marks devices that look like a JK BMS. The name can be anything "
                                  "(for example, JK-B2A8S20P)."), css="sub"), False, False, 0)
 
-        opts = Gtk.Box(spacing=10)
-        self.show_all_chk = Gtk.CheckButton(label=tr("show unnamed"))
-        self.show_all_chk.connect("toggled", lambda *_: self.render_devices())
-        opts.pack_start(self.show_all_chk, False, False, 0)
-        page.pack_start(opts, False, False, 4)
-
         arow = Gtk.Box(spacing=10)
         arow.pack_start(label(tr("Enter the address manually:")), False, False, 0)
         self.addr_entry = Gtk.Entry()
@@ -517,8 +531,6 @@ class App(Gtk.Window):
         items = sorted(self.devices.items(), key=lambda kv: (not kv[1]["ffe0"], -(kv[1]["rssi"] or -999)))
         sel_iter = None
         for addr, d in items:
-            if not d["name"] and not self.show_all_chk.get_active() and addr != keep:
-                continue
             name = ("★ " if d["ffe0"] else "") + (d["name"] or tr("(no name)"))
             rssi = tr("{v} dBm").format(v=d["rssi"]) if d["rssi"] is not None else "—"
             it = self.store.append([name, addr, rssi])
