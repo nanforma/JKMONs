@@ -1,13 +1,21 @@
 #!/usr/bin/env bash
-# Сборка пакета jkmons_<версия>_<архитектура>.deb для Linux Mint / Ubuntu / Debian.
+# Builds the package jkmons_<version>_<architecture>.deb for Linux Mint / Ubuntu / Debian.
 #     bash build_deb.sh
-# Установка:  sudo apt install ./jkmons_*.deb     Удаление:  sudo apt remove jkmons
+# Install:  sudo apt install ./jkmons_*.deb     Remove:  sudo apt remove jkmons
 #
-# Системные зависимости (GTK3, python3-gi, bluez) apt ставит сам по полю Depends.
-# Библиотеки bleak и dbus-fast кладутся в приватную папку пакета (/usr/lib/jkmons/site),
-# поэтому они не конфликтуют с системными пакетами Python.
+# System dependencies (GTK3, python3-gi, bluez) are installed by apt through the Depends field.
+# The bleak and dbus-fast libraries go into the package's private folder (/usr/lib/jkmons/site),
+# so they do not conflict with the system Python packages.
 set -euo pipefail
 cd "$(dirname "$(readlink -f "$0")")"
+
+# --- build messages follow the system language (en / uk / ru); usage: m "English" "Українською" "По-русски"
+case "${LC_ALL:-${LC_MESSAGES:-${LANG:-en}}}" in
+    uk*) _L=2 ;;
+    ru*) _L=3 ;;
+    *)   _L=1 ;;
+esac
+m() { eval "printf '%s\n' \"\${$_L}\""; }
 
 PKG=jkmons
 VERSION="${VERSION:-1.1.0}"
@@ -18,12 +26,12 @@ OUT="${PKG}_${VERSION}_${ARCH}.deb"
 PY=/usr/bin/python3
 
 if [ -z "${SKIP_APT:-}" ]; then
-    echo "==> 1/4 Инструменты сборки (спросит пароль sudo)"
+    m "==> 1/4 Build tools (sudo will ask for a password)" "==> 1/4 Інструменти збірки (sudo запитає пароль)" "==> 1/4 Инструменты сборки (sudo спросит пароль)"
     sudo apt-get update -qq
     sudo apt-get install -y python3-pip python3-gi python3-gi-cairo gir1.2-gtk-3.0 bluez dpkg-dev
 fi
 
-echo "==> 2/4 Файлы пакета"
+m "==> 2/4 Package files" "==> 2/4 Файли пакета" "==> 2/4 Файлы пакета"
 rm -rf build_deb
 mkdir -p "$LIB/site" "$ROOT/DEBIAN" "$ROOT/usr/bin" "$ROOT/usr/share/applications" \
          "$ROOT/usr/share/pixmaps" "$ROOT/usr/share/icons/hicolor/scalable/apps"
@@ -35,7 +43,7 @@ cp jkmon_gtk.py jkcore.py blepair.py i18n.py jkmon.png jkmon.svg "$LIB/"
 cp jkmon.png "$ROOT/usr/share/pixmaps/$PKG.png"
 # icon sizes for the menu / panel are rendered from the SVG at build time (see make_icons.py)
 "$PY" make_icons.py jkmon.svg jkmon.png "$ROOT/usr/share/icons/hicolor" "$PKG" \
-    || { echo "Предупреждение: размеры иконки не созданы, кладу только 512 px"; \
+    || { m "Warning: icon sizes were not created, using the 512 px icon only" "Попередження: розміри іконки не створено, кладу лише 512 px" "Предупреждение: размеры иконки не созданы, кладу только 512 px"; \
          mkdir -p "$ROOT/usr/share/icons/hicolor/512x512/apps"; \
          cp jkmon.png "$ROOT/usr/share/icons/hicolor/512x512/apps/$PKG.png"; }
 find "$LIB" -name '__pycache__' -type d -prune -exec rm -rf {} +
@@ -51,7 +59,9 @@ cat > "$ROOT/usr/share/applications/$PKG.desktop" <<EOF
 [Desktop Entry]
 Type=Application
 Name=JKMONs
-Comment=Монитор JK BMS по Bluetooth
+Comment=Bluetooth monitor for JK BMS
+Comment[uk]=Bluetooth-монітор для JK BMS
+Comment[ru]=Bluetooth-монитор для JK BMS
 Exec=$PKG
 Icon=$PKG
 Categories=Utility;
@@ -59,12 +69,12 @@ StartupWMClass=jkmons
 Terminal=false
 EOF
 
-# нормальные права: файлы 644, папки и скрипты 755 (иначе обычный пользователь не прочитает иконку)
+# sane permissions: files 644, folders and scripts 755 (otherwise a normal user cannot read the icon)
 find "$ROOT" -type d -exec chmod 755 {} +
 find "$ROOT" -type f -exec chmod 644 {} +
 chmod 755 "$ROOT/usr/bin/$PKG"
 
-echo "==> 3/4 Описание пакета"
+m "==> 3/4 Package description" "==> 3/4 Опис пакета" "==> 3/4 Описание пакета"
 SIZE=$(du -sk "$ROOT/usr" | cut -f1)
 cat > "$ROOT/DEBIAN/control" <<EOF
 Package: $PKG
@@ -80,7 +90,7 @@ Description: JKMONs - Bluetooth monitor for JK BMS (GTK3)
  SOC, temperatures, balancing state and a load bar with the time left to full charge or empty.
 EOF
 
-# обновление кэша иконок и меню после установки/удаления (иначе значок в меню может не появиться)
+# refresh the icon cache and the menu after install/remove (otherwise the menu icon may not appear)
 for script in postinst postrm; do
     cat > "$ROOT/DEBIAN/$script" <<'EOS'
 #!/bin/sh
@@ -96,10 +106,10 @@ EOS
     chmod 755 "$ROOT/DEBIAN/$script"
 done
 
-echo "==> 4/4 Сборка .deb"
+m "==> 4/4 Building the .deb" "==> 4/4 Збірка .deb" "==> 4/4 Сборка .deb"
 dpkg-deb --root-owner-group --build "$ROOT" "$OUT" >/dev/null
 echo
 dpkg-deb -I "$OUT" | sed -n '1,12p'
 echo
-echo "Готово: $(pwd)/$OUT"
-echo "Установка: sudo apt install ./$OUT"
+m "Done: $(pwd)/$OUT" "Готово: $(pwd)/$OUT" "Готово: $(pwd)/$OUT"
+m "Install: sudo apt install ./$OUT" "Встановлення: sudo apt install ./$OUT" "Установка: sudo apt install ./$OUT"
