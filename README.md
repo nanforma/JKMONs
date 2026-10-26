@@ -5,6 +5,11 @@ resistances, temperatures, balancing, MOSFET state, error flags, and a load bar 
 charge or empty. No browser needed.
 Read-only: the app only sends data requests to the BMS and never switches anything.
 
+<p>
+  <img src="screenshot/connection.png" width="400">
+  <img src="screenshot/monitor.png" width="400">
+</p>
+
 ## Install: option 1 — deb package (recommended for Mint / Ubuntu / Debian)
 
 ```bash
