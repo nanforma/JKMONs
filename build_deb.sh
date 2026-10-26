@@ -10,7 +10,7 @@ set -euo pipefail
 cd "$(dirname "$(readlink -f "$0")")"
 
 PKG=jkmons
-VERSION="${VERSION:-1.0.0}"
+VERSION="${VERSION:-1.1.0}"
 ARCH="$(dpkg --print-architecture)"
 ROOT="build_deb/${PKG}_${VERSION}_${ARCH}"
 LIB="$ROOT/usr/lib/$PKG"
