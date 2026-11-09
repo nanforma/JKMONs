@@ -58,7 +58,7 @@ import i18n  # noqa: E402
 import jkcore  # noqa: E402
 from i18n import tr  # noqa: E402
 
-VERSION = "1.2.0"
+VERSION = "1.2.1"
 WEBSITE = "https://github.com/nanforma/JKMONs"
 CONFIG = Path.home() / ".config" / "jkmon" / "config.json"
 log = logging.getLogger("jkmon.gui")

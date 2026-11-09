@@ -37,11 +37,39 @@ FRAME_DEVICE_INFO = 0x03
 OFF1 = 16
 OFF2 = 32
 
-# Names of error/alarm bits of the 32-bit bitmask. Only bits confirmed against the JK phone app are listed;
-# other bits are shown as "bit N". English text here is translated in the GUI (see i18n.py).
+# Names of error/alarm bits of the 32-bit bitmask (JK02_32S, bytes 166-169). Bits 4 and 19 were confirmed
+# against the JK phone app on the author's board; the other names come from the esphome-jk-bms protocol notes
+# (docs/protocol-design-ble.md) and were not seen on a real fault. Bits 3 and 29-31 are unused.
+# The English text is translated in the GUI (see i18n.py).
 ERROR_NAMES: dict = {
-    4: "Cell overvoltage protection (OVP)",  # confirmed in the JK app ("Cell OVP"): charging may be stopped
+    0: "Wire resistance",
+    1: "MOSFET overtemperature",
+    2: "Cell count does not match the settings",
+    4: "Cell overvoltage protection (OVP)",  # confirmed in the JK app ("Cell OVP"); the notes call it "fully charged"
+    5: "Battery pack overvoltage",
+    6: "Charge overcurrent",
+    7: "Charge short circuit",
+    8: "Charge overtemperature",
+    9: "Charge undertemperature",
+    10: "Coprocessor communication error",
+    11: "Cell undervoltage",
+    12: "Battery pack undervoltage",
+    13: "Discharge overcurrent",
+    14: "Discharge short circuit",
+    15: "Discharge overtemperature",
+    16: "Charging MOSFET abnormal",
+    17: "Discharging MOSFET abnormal",
+    18: "GPS disconnected",
     19: "Recommendation: change the BMS settings password",  # confirmed in the JK app
+    20: "Discharge on failed",
+    21: "Battery overtemperature",
+    22: "Temperature sensor anomaly",
+    23: "PL module anomaly",
+    24: "SCP release failed",
+    25: "Discharge OCP II",
+    26: "Discharge OCP III",
+    27: "Discharge undertemperature alarm",
+    28: "GPS remote lock",
 }
 # Bits that are notices, not faults (shown in blue, not as a warning): bit 4 is the normal end of charging.
 INFO_BITS = {4, 19}
