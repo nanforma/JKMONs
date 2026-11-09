@@ -132,6 +132,7 @@ _ROWS = [
     ("Idle", "Простій", "Простой"),
     ("Time left:", "Залишилось:", "Осталось:"),
     ("About", "Про програму", "О программе"),
+    ("Battery type", "Тип батареї", "Тип батареи"),
     ("Bluetooth monitor for JK BMS (read-only)", "Bluetooth-монітор для JK BMS (лише читання)",
      "Bluetooth-монитор для JK BMS (только чтение)"),
     ("Tested with JK_B2A8S20P", "Перевірено з JK_B2A8S20P", "Проверено с JK_B2A8S20P"),

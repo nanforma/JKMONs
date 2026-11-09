@@ -18,7 +18,7 @@ esac
 m() { eval "printf '%s\n' \"\${$_L}\""; }
 
 PKG=jkmons
-VERSION="${VERSION:-1.1.0}"
+VERSION="${VERSION:-1.2.0}"
 ARCH="$(dpkg --print-architecture)"
 ROOT="build_deb/${PKG}_${VERSION}_${ARCH}"
 LIB="$ROOT/usr/lib/$PKG"

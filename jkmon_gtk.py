@@ -58,7 +58,7 @@ import i18n  # noqa: E402
 import jkcore  # noqa: E402
 from i18n import tr  # noqa: E402
 
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 WEBSITE = "https://github.com/nanforma/JKMONs"
 CONFIG = Path.home() / ".config" / "jkmon" / "config.json"
 log = logging.getLogger("jkmon.gui")
@@ -237,9 +237,35 @@ class CellWidget(Gtk.Box):
         self.bar = Gtk.LevelBar()
         for name in ("low", "high", "full"):
             self.bar.remove_offset_value(name)
-        self.bar.set_min_value(2.5)
-        self.bar.set_max_value(4.25)
+        self.bar.set_min_value(0)
+        self.bar.set_max_value(1)
         self.pack_start(self.bar, False, False, 0)
+
+
+# Battery chemistry: nominal cell voltage (for the load bar scale) and the cell voltage -> bar fill curve.
+# The curve points are (cell volts, fill 0..1). LiFePO4 is flat, so a linear scale would leave a healthy cell
+# at about 70%. LiFePO4: empty 2.5 V, plateau 3.2-3.3 V, rest voltage after charging 3.35-3.45 V, full 3.6-3.65 V.
+# LTO: empty 1.5 V, plateau 2.2-2.4 V, full 2.8 V. NMC/NCA: empty 3.0 V, nominal 3.6-3.7 V, full 4.2 V.
+# Above the last point the bar stays full.
+CHEMISTRIES = {
+    "lifepo4": ("LiFePO4", 3.2, ((2.50, 0.00), (3.00, 0.05), (3.20, 0.20), (3.30, 0.50), (3.40, 0.80),
+                                 (3.50, 0.90), (3.65, 1.00))),
+    "lto": ("LTO", 2.3, ((1.50, 0.00), (1.90, 0.05), (2.10, 0.20), (2.25, 0.50), (2.35, 0.75),
+                         (2.50, 0.90), (2.80, 1.00))),
+    "nmc": ("NMC/NCA", 3.7, ((3.00, 0.00), (3.30, 0.05), (3.50, 0.20), (3.60, 0.35), (3.70, 0.50),
+                             (3.80, 0.65), (3.90, 0.78), (4.00, 0.88), (4.10, 0.95), (4.20, 1.00))),
+}
+DEFAULT_CHEM = "lifepo4"
+
+
+def cell_fill(v: float, chem: str) -> float:
+    curve = CHEMISTRIES.get(chem, CHEMISTRIES[DEFAULT_CHEM])[2]
+    if v <= curve[0][0]:
+        return 0.0
+    for (v0, f0), (v1, f1) in zip(curve, curve[1:]):
+        if v <= v1:
+            return f0 + (f1 - f0) * (v - v0) / (v1 - v0)
+    return 1.0
 
 
 class GtkLogHandler(logging.Handler):
@@ -272,6 +298,9 @@ class App(Gtk.Window):
         i18n.set_lang(self.cfg.get("lang", i18n.DEFAULT))
         self.worker = None
         self.devices = {}
+        self.chem = self.cfg.get("chem", DEFAULT_CHEM)
+        if self.chem not in CHEMISTRIES:
+            self.chem = DEFAULT_CHEM
         self.bar_scale = None  # watts that fill the load bar (100%): 1C power, set from the first reading
         self.bar_value = 0.0
         self.err_msgs = []      # status messages shown one at a time in the plaque
@@ -323,6 +352,14 @@ class App(Gtk.Window):
         hb.pack_end(self.status_lbl)
         self.set_titlebar(hb)
         self.set_status(*self.status)
+
+    def on_chem_changed(self, combo):
+        cid = combo.get_active_id()
+        if cid in CHEMISTRIES and cid != self.chem:
+            self.chem = cid
+            self.cfg["chem"] = cid
+            save_config(self.cfg)
+            self.bar_scale = None  # the load bar scale depends on the nominal cell voltage; recalculated on the next reading
 
     def on_about(self, *_):
         dlg = Gtk.AboutDialog(transient_for=self, modal=True)
@@ -457,6 +494,14 @@ class App(Gtk.Window):
         about_btn.set_tooltip_text(tr("About"))
         about_btn.connect("clicked", self.on_about)
         head.pack_end(about_btn, False, False, 0)
+        self.chem_combo = Gtk.ComboBoxText()
+        for cid, (name, _v, _c) in CHEMISTRIES.items():
+            self.chem_combo.append(cid, name)
+        self.chem_combo.set_active_id(self.chem)
+        self.chem_combo.set_tooltip_text(tr("Battery type"))
+        self.chem_combo.set_valign(Gtk.Align.CENTER)
+        self.chem_combo.connect("changed", self.on_chem_changed)
+        head.pack_end(self.chem_combo, False, False, 0)
         page.pack_start(head, False, False, 0)
         page.pack_start(label(tr("Before connecting, close the JK app on your phone and turn off Bluetooth on it: "
                                  "the BMS accepts only one connection."), css="sub", wrap=True), False, False, 0)
@@ -909,7 +954,7 @@ class App(Gtk.Window):
         for cw, c in zip(self.cell_widgets, cells):
             cw.volt.set_text(tr("{v:.3f} V").format(v=c["v"]))
             cw.res.set_text(tr("{x:.0f} mΩ").format(x=c["r"] * 1000))
-            cw.bar.set_value(min(4.25, max(2.5, c["v"])))
+            cw.bar.set_value(cell_fill(c["v"], self.chem))
             set_class(cw, "cell-max", c["n"] == st["max_cell"])
             set_class(cw, "cell-min", c["n"] == st["min_cell"] and st["min_cell"] != st["max_cell"])
         self.cells_title.set_text(f'{tr("Cells").upper()} · {d["cell_count"]}S')
@@ -982,10 +1027,12 @@ class App(Gtk.Window):
             t = "--:--:--"
         self.load_time_lbl.set_markup(GLib.markup_escape_text(tr("Time left:")) + " " + val(t))
         if self.bar_scale is None:  # 100% of the bar = capacity (Ah) x nominal voltage (V) = the 1C power in W
-            # LiFePO4 nominal cell voltage is 3.2 V: 4S = 12.8 V; the cell count and capacity come
-            # from the BMS. If the cells are not in the LiFePO4 range, the measured pack voltage is used instead.
+            # Nominal cell voltage of the chosen battery type (LiFePO4 3.2 V: 4S = 12.8 V); the cell count and
+            # capacity come from the BMS. If the cells are far outside the type's voltage range, the measured
+            # pack voltage is used instead.
+            _name, nominal, curve = CHEMISTRIES[self.chem]
             avg_cell = d["pack_v"] / max(1, d["cell_count"])
-            volts = d["cell_count"] * 3.2 if 2.4 <= avg_cell <= 3.7 else d["pack_v"]
+            volts = d["cell_count"] * nominal if curve[0][0] - 0.1 <= avg_cell <= curve[-1][0] + 0.05 else d["pack_v"]
             self.bar_scale = (d["cap_nominal"] * volts) or 1000.0
         self.bar_value = d["power"]
         self.load_bar.queue_draw()
