@@ -98,7 +98,9 @@ the window's title bar.
 The status plaque above the cards shows the known flags one at a time, switching every 3 seconds, so it always takes
 one line. Confirmed with the JK app: bit 4 is "Cell OVP" (a cell reached the overvoltage threshold, which normally
 means the end of charging) and bit 19 is a recommendation to change the BMS settings password. Both are shown as
-blue notices, not alarms. Flags with an unknown meaning are not shown in the window: they are written to the **Log**
+blue notices, not alarms. The other bits (0-2, 5-18, 20-28) are named after the esphome-jk-bms protocol notes
+(`docs/protocol-design-ble.md`) and shown as alarms; they have not been seen on a real fault yet. Bits 3 and 29-31
+are unused. Flags with an unknown meaning are not shown in the window: they are written to the **Log**
 tab and to `~/.cache/jkmon/jkmon.log` as "BMS flags 0x... (bit N: unknown meaning)". To add a name, put it into
 `ERROR_NAMES` in `jkcore.py`, for example `{19: "text from the JK app"}`; add the bit to `INFO_BITS` if it is only
 a notice.
