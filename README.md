@@ -103,6 +103,14 @@ tab and to `~/.cache/jkmon/jkmon.log` as "BMS flags 0x... (bit N: unknown meanin
 `ERROR_NAMES` in `jkcore.py`, for example `{19: "text from the JK app"}`; add the bit to `INFO_BITS` if it is only
 a notice.
 
+## Battery type
+
+The dropdown in the header of the Connection tab (next to the (i) button) selects LiFePO4 (default), LTO or
+NMC/NCA. The choice is remembered. It sets the fill curve of the small bars under the cell voltages (the discharge
+curves are not linear: for LiFePO4 empty is 2.5 V, the plateau is 3.2-3.3 V, rest voltage after charging 3.35-3.45 V
+and full 3.6-3.65 V) and the nominal cell voltage used for the load bar scale (3.2 V, 2.3 V, 3.7 V).
+Only LiFePO4 has been tested; the LTO and NMC/NCA curves are approximate.
+
 ## Load bar
 
 The bar under the cards shows the power: zero in the middle, charging to the right, discharging to the left.
