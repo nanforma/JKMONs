@@ -455,11 +455,13 @@ class BmsWorker(threading.Thread):
         finally:
             self.loop.close()
 
-    def stop(self):
-        self._ready.wait(3)
+    def stop(self, timeout: float = 2.0):
+        """Cancel the BLE task and wait at most `timeout` seconds. A BlueZ disconnect that takes longer
+        is not waited for: the thread is a daemon and the link is dropped when the process exits."""
+        self._ready.wait(1)
         if self.loop is not None and self._task is not None and not self.loop.is_closed():
             self.loop.call_soon_threadsafe(self._task.cancel)
-        self.join(timeout=8)
+        self.join(timeout=timeout)
 
 
 def scan_devices(timeout: float = 8.0) -> dict:
