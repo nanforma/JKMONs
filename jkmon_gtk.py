@@ -58,7 +58,7 @@ import i18n  # noqa: E402
 import jkcore  # noqa: E402
 from i18n import tr  # noqa: E402
 
-VERSION = "1.2.2"
+VERSION = "1.3.0"
 WEBSITE = "https://github.com/nanforma/JKMONs"
 CONFIG = Path.home() / ".config" / "jkmon" / "config.json"
 log = logging.getLogger("jkmon.gui")
@@ -823,7 +823,7 @@ class App(Gtk.Window):
 
         def work():
             if worker:
-                worker.stop()
+                worker.stop(timeout=2.0)
             GLib.idle_add(self.after_stop)
 
         threading.Thread(target=work, daemon=True).start()
@@ -850,8 +850,10 @@ class App(Gtk.Window):
         return False
 
     def on_destroy(self, *_):
+        # Hide the window at once; the BLE session is closed with a short time limit, then the app exits.
+        self.hide()
         if self.worker:
-            self.worker.stop()
+            self.worker.stop(timeout=1.0)
         Gtk.main_quit()
 
     # ------------------------------------------------------------ periodic update
